@@ -123,11 +123,13 @@ contract GoodsManagement is Ownable {
 
     FinalSaleOrder[] finalSaleOrder;
 
-    mapping(uint => StoreOrder) public storehouse;
+    mapping(uint => StoreOrder) private storehouse;
     //storehouseId -> StoreOrder
 
+    uint public currentGoodsId;
 
     constructor (address payable beneficiarAddress) public {
+        currentGoodsId = 1;
         setBeneficiarAddress(beneficiarAddress);
     }
 
@@ -137,23 +139,17 @@ contract GoodsManagement is Ownable {
         return address(this).balance;
     }
 
-    function getGamesByIndex(uint index) public view returns
+    function getGoodsById(uint id) public view returns
     (
-        address player,
-        uint betAmount,
-        uint prize,
-        bool isWinner,
-        uint[] memory symbols,
-        bool started,
-        string memory symbolWinner
+        string memory name,
+        string memory measure,
+        uint mainPartAmount,
+        uint afterCommaAmount
     ) {
-        Game memory game = games[index];
-        player = game.player;
-        betAmount = game.betAmount;
-        prize = game.prize;
-        isWinner = game.isWinner;
-        symbols = game.symbols;
-        started = game.started;
-        symbolWinner = game.symbolWinner;
+        Goods memory goods = catalog[id];
+        name = goods.name;
+        measure = goods.measure;
+        mainPartAmount = goods.cost.mainPart;
+        afterCommaAmount = goods.cost.afterComma;
     }
 }
