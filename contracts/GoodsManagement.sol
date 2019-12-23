@@ -128,9 +128,8 @@ contract GoodsManagement is Ownable {
 
     uint public currentGoodsId;
 
-    constructor (address payable beneficiarAddress) public {
+    constructor () public {
         currentGoodsId = 1;
-        setBeneficiarAddress(beneficiarAddress);
     }
 
     function () external payable {}
@@ -152,4 +151,19 @@ contract GoodsManagement is Ownable {
         mainPartAmount = goods.cost.mainPart;
         afterCommaAmount = goods.cost.afterComma;
     }
+
+    function addGoodsToCatalog(
+        string memory name,
+        string memory measure,
+        uint mainPartAmount,
+        uint afterCommaAmount
+    ) public {
+        Goods storage goods = catalog[currentGoodsId];
+        currentGoodsId++;
+        goods.name = name;
+        goods.measure = measure;
+        goods.cost.mainPart = mainPartAmount;
+        goods.cost.afterComma = afterCommaAmount;
+    }
+
 }
