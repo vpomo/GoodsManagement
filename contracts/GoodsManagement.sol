@@ -138,6 +138,7 @@ contract GoodsManagement is Ownable {
 
     event AddFactoryGoods(uint date, address manager, uint goodsId, uint mainPartAmount, uint afterCommaAmount, bool isConfirmForBuy);
     event AddClientGoods(uint date, address loader, uint goodsId, uint mainPartAmount, uint afterCommaAmount, bool isStocked);
+    event AddFinalSaleOrder(uint goodsId, uint mainPartAmount, uint afterCommaAmount);
 
     constructor () public {
         currentGoodsId = 1;
@@ -175,6 +176,20 @@ contract GoodsManagement is Ownable {
         goods.measure = measure;
         goods.cost.mainPart = mainPartAmount;
         goods.cost.afterComma = afterCommaAmount;
+    }
+
+    function addToFinalSaleOrder(
+        uint goodsId,
+        uint mainPartAmount,
+        uint afterCommaAmount
+    ) public onlyAdmins {
+        finalSaleOrder.push(
+            FinalSaleOrder(
+                goodsId,
+                Amount(mainPartAmount, afterCommaAmount)
+            )
+        );
+        emit AddFinalSaleOrder(goodsId, mainPartAmount, afterCommaAmount);
     }
 
     function addToOrderForBuy(
