@@ -42,18 +42,6 @@ contract Ownable {
     }
 
     /**
-     * @dev Allows the current owner to relinquish control of the contract.
-     * It will not be possible to call the functions with the `onlyOwner`
-     * modifier anymore.
-     * @notice Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
-     */
-    function renounceOwnership() public onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
-
-    /**
      * @dev Allows the current owner to transfer control of the contract to a newOwner.
      * @param newOwner The address to transfer ownership to.
      */
@@ -112,13 +100,14 @@ contract GoodsManagement is Ownable {
         Amount quantity;
     }
 
-    mapping(address => string) public managers;
-    mapping(address => string) public loaders;
+    mapping(address => bool) public managers;
+    mapping(address => bool) public loaders;
+    mapping(address => bool) public admins;
 
-    mapping(uint => mapping(address => FactoryOrder)) private ordersForBuy;
+    mapping(uint => mapping(address => FactoryOrder[])) private ordersForBuy;
     //data -> manager address -> FactoryOrder
 
-    mapping(uint => mapping(address => ClientOrder)) private ordersForClient;
+    mapping(uint => mapping(address => ClientOrder[])) private ordersForClient;
     //data -> loader address -> ClientOrder
 
     FinalSaleOrder[] finalSaleOrder;
@@ -127,6 +116,28 @@ contract GoodsManagement is Ownable {
     //storehouseId -> StoreOrder
 
     uint public currentGoodsId;
+
+    modifier onlyManagers {
+        require(managers[msg.sender] || admins[msg.sender], "only managers method called");
+        _;
+    }
+
+    modifier onlyLoaders {
+        require(loaders[msg.sender] || admins[msg.sender], "only loaders method called");
+        _;
+    }
+
+    modifier onlyAdmins {
+        require(admins[msg.sender], "only admins method called");
+        _;
+    }
+
+    event SetManager(address indexed walletUser, bool status, address indexed admin);
+    event SetLoader(address indexed walletUser, bool status, address indexed admin);
+    event SetAdmin(address indexed walletUser, bool status, address indexed admin);
+
+    event AddFactoryGoods(uint date, address manager, uint goodsId, uint mainPartAmount, uint afterCommaAmount, bool isConfirmForBuy);
+    event AddClientGoods(uint date, address loader, uint goodsId, uint mainPartAmount, uint afterCommaAmount, bool isStocked);
 
     constructor () public {
         currentGoodsId = 1;
@@ -152,7 +163,7 @@ contract GoodsManagement is Ownable {
         afterCommaAmount = goods.cost.afterComma;
     }
 
-    function addGoodsToCatalog(
+    function addToCatalog(
         string memory name,
         string memory measure,
         uint mainPartAmount,
@@ -166,4 +177,92 @@ contract GoodsManagement is Ownable {
         goods.cost.afterComma = afterCommaAmount;
     }
 
+    function addToOrderForBuy(
+        uint date,
+        address manager,
+        uint goodsId,
+        uint mainPartAmount,
+        uint afterCommaAmount,
+        bool isConfirmForBuy
+    ) public onlyManagers {
+        ordersForBuy[date][manager].push(
+            FactoryOrder(
+                goodsId,
+                Amount(mainPartAmount, afterCommaAmount),
+                isConfirmForBuy
+            )
+        );
+        emit AddFactoryGoods(date, manager, goodsId, mainPartAmount, afterCommaAmount, isConfirmForBuy);
+    }
+
+    function addToOrderForClient(
+        uint date,
+        address loader,
+        uint goodsId,
+        uint mainPartAmount,
+        uint afterCommaAmount,
+        bool isStocked
+    ) public onlyLoaders {
+        ordersForClient[date][loader].push(
+            ClientOrder(
+                goodsId,
+                Amount(mainPartAmount, afterCommaAmount),
+                isStocked
+            )
+        );
+        emit AddClientGoods(date, loader, goodsId, mainPartAmount, afterCommaAmount, isStocked);
+    }
+
+    function confirmFactoryGoods(
+        uint date,
+        address manager,
+        uint orderId,
+        bool isConfirmForBuy
+    ) public onlyAdmins {
+        if (ordersForBuy[date][manager].length > orderId) {
+            FactoryOrder storage factoryOrder = ordersForBuy[date][manager][orderId];
+            factoryOrder.isConfirmForBuy = isConfirmForBuy;
+        }
+    }
+
+    function stockClientGoods(
+        uint date,
+        address loader,
+        uint orderId,
+        bool isStocked
+    ) public onlyAdmins {
+        if (ordersForBuy[date][loader].length > orderId) {
+            ClientOrder storage clientOrder = ordersForClient[date][loader][orderId];
+            clientOrder.isStocked = isStocked;
+        }
+    }
+
+    function sizeOrdersForBuy(
+        uint date,
+        address manager
+    ) public view returns (uint) {
+        return ordersForBuy[date][manager].length;
+    }
+
+    function sizeOrdersForClient(
+        uint date,
+        address loader
+    ) public view returns (uint) {
+        return ordersForClient[date][loader].length;
+    }
+
+    function setManager(address _newUser, bool _status) onlyOwner public {
+        managers[_newUser] = _status;
+        emit SetManager(_newUser, _status, msg.sender);
+    }
+
+    function setLoader(address _newUser, bool _status) onlyOwner public {
+        loaders[_newUser] = _status;
+        emit SetLoader(_newUser, _status, msg.sender);
+    }
+
+    function setAdmin(address _newUser, bool _status) onlyOwner public {
+        admins[_newUser] = _status;
+        emit SetAdmin(_newUser, _status, msg.sender);
+    }
 }
