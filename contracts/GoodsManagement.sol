@@ -116,6 +116,7 @@ contract GoodsManagement is Ownable {
     //storehouseId -> StoreOrder
 
     uint public currentGoodsId;
+    uint public currentStoreId;
 
     modifier onlyManagers {
         require(managers[msg.sender] || admins[msg.sender], "only managers method called");
@@ -142,6 +143,7 @@ contract GoodsManagement is Ownable {
 
     constructor () public {
         currentGoodsId = 1;
+        currentStoreId = 1;
     }
 
     function () external payable {}
@@ -169,13 +171,35 @@ contract GoodsManagement is Ownable {
         string memory measure,
         uint mainPartAmount,
         uint afterCommaAmount
-    ) public {
+    ) public onlyAdmins {
         Goods storage goods = catalog[currentGoodsId];
         currentGoodsId++;
         goods.name = name;
         goods.measure = measure;
         goods.cost.mainPart = mainPartAmount;
         goods.cost.afterComma = afterCommaAmount;
+    }
+
+    function addToStore(
+        uint goodsId,
+        uint mainPartAmount,
+        uint afterCommaAmount
+    ) public onlyLoaders {
+        StoreOrder storage storeOrder = storehouse[currentStoreId];
+        currentStoreId++;
+        storeOrder.goodsId = goodsId;
+        storeOrder.quantity.mainPart = mainPartAmount;
+        storeOrder.quantity.afterComma = afterCommaAmount;
+    }
+
+    function setAmountToStore(
+        uint storeId,
+        uint mainPartAmount,
+        uint afterCommaAmount
+    ) public onlyLoaders {
+        StoreOrder storage storeOrder = storehouse[storeId];
+        storeOrder.quantity.mainPart = mainPartAmount;
+        storeOrder.quantity.afterComma = afterCommaAmount;
     }
 
     function addToFinalSaleOrder(
